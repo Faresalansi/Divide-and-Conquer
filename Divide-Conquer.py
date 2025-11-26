@@ -1,5 +1,10 @@
+import matplotlib.pyplot as plt
 
-datapoints = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9, 213.8),
+# -------------------------------------------------
+#  QuickHull (Divide & Conquer Convex Hull)
+# -------------------------------------------------
+
+points = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9, 213.8),
  (951.7, 848.9), (211.2, 963.5), (563.7, 378.9), (295.4, 183.7), (704.8, 935.3),
  (345.9, 403.2), (951.8, 734.5), (839.6, 138.7), (447.3, 646.2), (732.1, 593.4),
  (117.9, 759.3), (839.2, 528.1), (321.3, 865.5), (769.6, 190.3), (123.5, 647.1),
@@ -18,86 +23,52 @@ datapoints = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (6
  (649.9, 319.8), (380.1, 826.5), (918.7, 826.7), (222.8, 743.1), (789.9, 496.2),
  (476.1, 201.9), (930.7, 382.4), (342.7, 743.8), (745.2, 995.4), (193.2, 968.3),
  (587.3, 240.5), (287.1, 663.5), (903.8, 171.2), (174.8, 882.4), (669.1, 583.6),
- (558.2, 286.4), (849.9, 216.7), (494.7, 824.1), (651.2, 415.3), (391.4, 341.5)]; 
+ (558.2, 286.4), (849.9, 216.7), (494.7, 824.1), (651.2, 415.3), (391.4, 341.5)]
 
-def cross(o, a, b):
-    return (a[0] - o[0]) * (b[1] - o[1]) - \
-           (a[1] - o[1]) * (b[0] - o[0])
+# ------------------------------------------
+# Helper Functions
+# ------------------------------------------
 
+def point_line_distance(A, B, C):
+    return abs((B[0]-A[0])*(A[1]-C[1]) - (A[0]-C[0])*(B[1]-A[1]))
 
-def merge_hulls(left, right):
+def is_left(A, B, C):
+    return ((B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0])) > 0
 
-    if not left:
-        return right
-    if not right:
-        return left
+def quickhull(points, A, B):
+    left_points = [p for p in points if is_left(A, B, p)]
+    if not left_points:
+        return []
+    
+    Pmax = max(left_points, key=lambda p: point_line_distance(A, B, p))
+    
+    return ( quickhull(left_points, A, Pmax)
+           + [Pmax]
+           + quickhull(left_points, Pmax, B) )
 
-  
-    idx_left = max(range(len(left)), key=lambda i: left[i][0])
-    idx_right = min(range(len(right)), key=lambda i: right[i][0])
+# ------------------------------------------
+# Build full hull
+# ------------------------------------------
 
-  
-    done = False
-    while not done:
-        done = True
-        while cross(right[idx_right], left[idx_left], left[(idx_left+1) % len(left)]) > 0:
-            idx_left = (idx_left + 1) % len(left)
-        while cross(left[idx_left], right[idx_right], right[(idx_right-1) % len(right)]) < 0:
-            idx_right = (idx_right - 1) % len(right)
-            done = False
+P1 = min(points)   # leftmost point
+P2 = max(points)   # rightmost point
 
-    upper_left = idx_left
-    upper_right = idx_right
+upper = quickhull(points, P1, P2)
+lower = quickhull(points, P2, P1)
 
-   
-    idx_left = max(range(len(left)), key=lambda i: left[i][0])
-    idx_right = min(range(len(right)), key=lambda i: right[i][0])
+hull = [P1] + upper + [P2] + lower
+hull_loop = hull + [hull[0]]   # close the shape
 
-    done = False
-    while not done:
-        done = True
-        while cross(left[idx_left], right[idx_right], right[(idx_right+1) % len(right)]) > 0:
-            idx_right = (idx_right + 1) % len(right)
-        while cross(right[idx_right], left[idx_left], left[(idx_left-1) % len(left)]) < 0:
-            idx_left = (idx_left - 1) % len(left)
-            done = False
+# ------------------------------------------
+# Plot
+# ------------------------------------------
 
-    lower_left = idx_left
-    lower_right = idx_right
+xs, ys = zip(*points)
+hx, hy = zip(*hull_loop)
 
-   
-    hull = []
-
-    i = lower_left
-    while i != upper_left:
-        hull.append(left[i])
-        i = (i + 1) % len(left)
-    hull.append(left[upper_left])
-
-    i = upper_right
-    while i != lower_right:
-        hull.append(right[i])
-        i = (i + 1) % len(right)
-    hull.append(right[lower_right])
-
-    return hull
-
-def divide_and_conquer(points):
-    if len(points) <= 3:
-        return points
-
-    points.sort()  
-
-    mid = len(points) // 2
-    left = divide_and_conquer(points[:mid])
-    right = divide_and_conquer(points[mid:])
-
-    return merge_hulls(left, right)
-
-
-
-hull = divide_and_conquer(datapoints); 
-
-print("Convex Hull:")
-for p in hull:
-    print(p)
+plt.figure(figsize=(8, 8))
+plt.scatter(xs, ys, label="Points")
+plt.plot(hx, hy, label="Convex Hull")
+plt.title("Divide & Conquer Convex Hull (QuickHull)")
+plt.legend()
+plt.show()
