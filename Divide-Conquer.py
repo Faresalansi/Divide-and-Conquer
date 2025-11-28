@@ -28,10 +28,11 @@ cloud = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9,
 # ------------------------------------------
 # Helper Functions
 # ------------------------------------------
+ 
 
-def quickhull_convex_hull(points):
+def quickhull_divide_conquer_steps(points):
     """
-    This Algorithm finds the convex hull by picking extreme points, splitting the set, and recursively selecting the farthest points from each boundary segment until the outer boundary is formed.
+This Algorithm finds the convex hull by picking extreme points, splitting the set, and recursively selecting the farthest points from each boundary segment until the outer boundary is formed.
 
 Time complexity (worst case):
   -O(n^2) 
@@ -39,43 +40,59 @@ Space efficiency:
   -O(n) for storing points on the hull and the recursive stack.
 
     """
+    fig, ax = plt.subplots(figsize=(10,10))
+    xs, ys = zip(*points)
+    ax.scatter(xs, ys, label="Points")
+    ax.set_title("QuickHull Visualization steps")
+
+    hull_points = []
+
     def point_line_distance(A, B, C):
         return abs((B[0]-A[0])*(A[1]-C[1]) - (A[0]-C[0])*(B[1]-A[1]))
 
     def is_left(A, B, C):
         return ((B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0])) > 0
 
-    def quickhull(points, A, B):
+    def recursive_hull(points, A, B, depth=0):
         left_points = [p for p in points if is_left(A, B, p)]
+
+        # Highlight current line
+        ax.plot([A[0], B[0]], [A[1], B[1]], 'y--', alpha=0.5)
+        plt.pause(0.3)
+
         if not left_points:
-            return []
+            hull_points.append(B)
+            ax.plot([A[0], B[0]], [A[1], B[1]], 'r-', linewidth=2)
+            plt.pause(1)
+            return
+
+        # Find farthest point
         Pmax = max(left_points, key=lambda p: point_line_distance(A, B, p))
-        return quickhull(left_points, A, Pmax) + [Pmax] + quickhull(left_points, Pmax, B)
+        ax.scatter(*Pmax, color='red', s=80)  # highlight farthest point
 
-    # Identify extreme points
-    P1 = min(points)   # leftmost point
-    P2 = max(points)   # rightmost point
+        # Draw lines to Pmax
+        ax.plot([A[0], Pmax[0]], [A[1], Pmax[1]], 'g--', linewidth=1)
+        ax.plot([Pmax[0], B[0]], [Pmax[1], B[1]], 'g--', linewidth=1)
+        plt.pause(1)
 
-    upper = quickhull(points, P1, P2)
-    lower = quickhull(points, P2, P1)
+        # Recursive calls
+        recursive_hull(left_points, A, Pmax, depth+1)
+        recursive_hull(left_points, Pmax, B, depth+1)
 
-    hull = [P1] + upper + [P2] + lower
-    return hull
+    P1 = min(points)
+    P2 = max(points)
+    hull_points.append(P1)
+
+    # Upper set
+    recursive_hull(points, P1, P2)
+    # Lower set
+    recursive_hull(points, P2, P1)
 
 
+    hx, hy = zip(*hull_points)
+    ax.plot(hx, hy, 'b-', linewidth=2, label="Convex Hull")
+    ax.legend()
+    plt.show()
 
-
-# Call the function
-hull = quickhull_convex_hull(cloud)
-hull_loop = hull + [hull[0]]  # Close the hull for plotting
-
-# Plot
-xs, ys = zip(*cloud)
-hx, hy = zip(*hull_loop)
-
-plt.figure(figsize=(8, 8))
-plt.scatter(xs, ys, label="Points")
-plt.plot(hx, hy, label="Convex Hull")
-plt.title("Divide & Conquer Convex Hull (QuickHull)")
-plt.legend()
-plt.show()
+# Run the step-by-step visualization
+quickhull_divide_conquer_steps(cloud)
