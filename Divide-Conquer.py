@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #  QuickHull (Divide & Conquer Convex Hull)
 # -------------------------------------------------
 
-points = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9, 213.8),
+cloud = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9, 213.8),
  (951.7, 848.9), (211.2, 963.5), (563.7, 378.9), (295.4, 183.7), (704.8, 935.3),
  (345.9, 403.2), (951.8, 734.5), (839.6, 138.7), (447.3, 646.2), (732.1, 593.4),
  (117.9, 759.3), (839.2, 528.1), (321.3, 865.5), (769.6, 190.3), (123.5, 647.1),
@@ -29,41 +29,48 @@ points = [(120.6, 873.2), (487.5, 965.4), (936.3, 286.7), (824.1, 755.5), (642.9
 # Helper Functions
 # ------------------------------------------
 
-def point_line_distance(A, B, C):
-    return abs((B[0]-A[0])*(A[1]-C[1]) - (A[0]-C[0])*(B[1]-A[1]))
+def quickhull_convex_hull(points):
+    """
+    This Algorithm finds the convex hull by picking extreme points, splitting the set, and recursively selecting the farthest points from each boundary segment until the outer boundary is formed.
 
-def is_left(A, B, C):
-    return ((B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0])) > 0
+Time complexity (worst case):
+  -O(n^2) 
+Space efficiency:
+  -O(n) for storing points on the hull and the recursive stack.
 
-def quickhull(points, A, B):
-    left_points = [p for p in points if is_left(A, B, p)]
-    if not left_points:
-        return []
-    
-    Pmax = max(left_points, key=lambda p: point_line_distance(A, B, p))
-    
-    return ( quickhull(left_points, A, Pmax)
-           + [Pmax]
-           + quickhull(left_points, Pmax, B) )
+    """
+    def point_line_distance(A, B, C):
+        return abs((B[0]-A[0])*(A[1]-C[1]) - (A[0]-C[0])*(B[1]-A[1]))
 
-# ------------------------------------------
-# Build full hull
-# ------------------------------------------
+    def is_left(A, B, C):
+        return ((B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0])) > 0
 
-P1 = min(points)   # leftmost point
-P2 = max(points)   # rightmost point
+    def quickhull(points, A, B):
+        left_points = [p for p in points if is_left(A, B, p)]
+        if not left_points:
+            return []
+        Pmax = max(left_points, key=lambda p: point_line_distance(A, B, p))
+        return quickhull(left_points, A, Pmax) + [Pmax] + quickhull(left_points, Pmax, B)
 
-upper = quickhull(points, P1, P2)
-lower = quickhull(points, P2, P1)
+    # Identify extreme points
+    P1 = min(points)   # leftmost point
+    P2 = max(points)   # rightmost point
 
-hull = [P1] + upper + [P2] + lower
-hull_loop = hull + [hull[0]]   # close the shape
+    upper = quickhull(points, P1, P2)
+    lower = quickhull(points, P2, P1)
 
-# ------------------------------------------
+    hull = [P1] + upper + [P2] + lower
+    return hull
+
+
+
+
+# Call the function
+hull = quickhull_convex_hull(cloud)
+hull_loop = hull + [hull[0]]  # Close the hull for plotting
+
 # Plot
-# ------------------------------------------
-
-xs, ys = zip(*points)
+xs, ys = zip(*cloud)
 hx, hy = zip(*hull_loop)
 
 plt.figure(figsize=(8, 8))
